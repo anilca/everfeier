@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="Skelett-Geister (Platzhalterbild)">
+  <rect width="600" height="600" fill="#1c1622"/>
+  <circle cx="300" cy="250" r="120" fill="#e8761c"/>
+  <path d="M240 225 l25 -30 l25 30 z M310 225 l25 -30 l25 30 z M235 290 q65 50 130 0 l-20 0 l-10 15 l-15 -15 l-20 15 l-15 -15 l-20 15 l-10 -15 z" fill="#1c1622"/>
+  <rect x="290" y="115" width="20" height="25" rx="4" fill="#4d7a3a"/>
+  <text x="300" y="450" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="700" fill="#f4ede4">Skelett-Geister</text>
+  <text x="300" y="500" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#a89cb3">Produktfoto folgt</text>
+</svg>
