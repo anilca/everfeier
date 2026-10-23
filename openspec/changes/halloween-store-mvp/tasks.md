@@ -69,4 +69,4 @@
 - [x] 10.3 Ortam değişkeni kontrolünü `instrumentation.ts`'ten, bir değişken ilk okunduğunda bir kez çalışacak şekilde taşı; birim testle ve wrangler altında eksik bir değişkenin tüm sorunları listeleyen 500 hatası verdiğini doğrula
 - [x] 10.4 Wrangler altında (`npm run preview`) tam akışı Stripe test moduyla çalıştır (sepet → ödeme → onay → admin → Versendet → takip → cayma → e-postalar) ve `npm run check:leak` ile tedarikçi bilgisi sızıntısı olmadığını doğrula
 - [x] 10.5 README'ye Cloudflare deploy adımlarını (Workers Paid, secret'lar, build değişkenleri, alan adı) yaz, canlıya geçiş listesini ve Datenschutz sayfasındaki barındırma bölümünü Cloudflare'e göre güncelle; kod ve README'de Vercel'e özgü talimat kalmadığını doğrula
-- [ ] 10.6 İşletmecinin Cloudflare hesabına `npm run deploy` ile deploy et ve `*.workers.dev` adresinde tam akışı Stripe test moduyla tekrarla; ana sayfada üçüncü taraf istek olmadığını tarayıcı ağ sekmesinden doğrula
+- [x] 10.6 İşletmecinin Cloudflare hesabına `npm run deploy` ile deploy et ve `*.workers.dev` adresinde tam akışı Stripe test moduyla tekrarla; ana sayfada üçüncü taraf istek olmadığını tarayıcı ağ sekmesinden doğrula
