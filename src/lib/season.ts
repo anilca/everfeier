@@ -1,3 +1,5 @@
+import { assertEnv } from "./env";
+
 export type ShopMode = "open" | "closed";
 export type VatMode = "kleinunternehmer" | "regular";
 
@@ -25,6 +27,7 @@ export function vatNote(mode: string | undefined): string {
 
 /** Reads season settings from the environment (server side). */
 export function seasonFromEnv(now = new Date()) {
+  assertEnv();
   const cutoff = process.env.ORDER_CUTOFF;
   return {
     open: isShopOpen(now, process.env.SHOP_MODE, cutoff),

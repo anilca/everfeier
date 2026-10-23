@@ -4,7 +4,7 @@
 
 - [x] 1.1 Next.js (App Router, TypeScript, ESLint) projesini oluştur, `npm run dev` ile ana sayfanın açıldığını doğrula
 - [x] 1.2 Vitest kur ve örnek bir testle `npm test` komutunun geçtiğini doğrula
-- [x] 1.3 `stripe` ve `resend` paketlerini ekle; `.env.example` dosyasına `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`, `OPERATOR_EMAIL`, `SHOP_MODE`, `ORDER_CUTOFF`, `VAT_MODE` değişkenlerini yaz; eksik zorunlu değişkende uygulamanın açık bir hatayla durduğunu doğrula
+- [x] 1.3 `stripe` ve `resend` paketlerini ekle; `.env.example` dosyasına `STRIPE_SECRET_KEY`, `SITE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `RESEND_API_KEY`, `MAIL_FROM`, `OPERATOR_EMAIL`, `SHOP_MODE`, `ORDER_CUTOFF`, `VAT_MODE` değişkenlerini yaz; eksik zorunlu değişkende uygulamanın açık bir hatayla durduğunu doğrula
 - [x] 1.4 README'ye kurulum, ortam değişkenleri ve Stripe test modu adımlarını yaz; README'deki komutların sıfırdan çalıştığını doğrula
 
 ## 2. Katalog ve yapılandırma
@@ -59,6 +59,14 @@
 
 ## 9. Uçtan uca doğrulama ve yayın hazırlığı
 
-- [ ] 9.1 Stripe test modunda tam akışı Vercel preview ortamında çalıştır (sepet → ödeme → onay → admin'de görünme → Versendet → takipte görünme → cayma → e-postalar); ana sayfada üçüncü taraf istek olmadığını tarayıcı ağ sekmesinden doğrula
-- [x] 9.2 Mobil genişlikte (375 px) ana sayfa, sepet, takip ve admin sayfalarının kullanılabilir olduğunu doğrula
-- [x] 9.3 README'ye canlıya geçiş kontrol listesini yaz (kod dışı, işletmecinin işleri: Gewerbeanmeldung, Stripe canlı aktivasyonu, gerçek yasal metinler ve Impressum, § 312j buton etiketinin kontrolü, Resend alan adı doğrulaması, Vercel Pro, canlı anahtarlar, `ORDER_CUTOFF`, gerçek ürün fotoğrafları, tarantulanın teslim süresi kontrolü, düşük tutarlı canlı test siparişi + geri ödeme) ve listedeki her adımın bir sorumluyla eşleştiğini doğrula
+- [x] 9.1 Mobil genişlikte (375 px) ana sayfa, sepet, takip ve admin sayfalarının kullanılabilir olduğunu doğrula
+- [x] 9.2 README'ye canlıya geçiş kontrol listesini yaz (kod dışı, işletmecinin işleri: Gewerbeanmeldung, Stripe canlı aktivasyonu, gerçek yasal metinler ve Impressum, § 312j buton etiketinin kontrolü, Resend alan adı doğrulaması, Cloudflare Workers Paid, canlı anahtarlar, `ORDER_CUTOFF`, gerçek ürün fotoğrafları, tarantulanın teslim süresi kontrolü, düşük tutarlı canlı test siparişi + geri ödeme) ve listedeki her adımın bir sorumluyla eşleştiğini doğrula
+
+## 10. Cloudflare Workers'a geçiş
+
+- [x] 10.1 `@opennextjs/cloudflare` ve `wrangler` paketlerini ekle; `wrangler.jsonc` (`nodejs_compat`, güncel `compatibility_date`), `open-next.config.ts` ve `preview`/`deploy`/`cf-typegen` script'lerini yaz; `npm run preview` ile wrangler altında ana sayfanın açıldığını doğrula
+- [x] 10.2 `NEXT_PUBLIC_SITE_URL` değişkenini yalnızca sunucuda okunan `SITE_URL` olarak yeniden adlandır (kod, `.env.example`, testler); kodda `NEXT_PUBLIC_` kalmadığını ve testlerin geçtiğini doğrula
+- [x] 10.3 Ortam değişkeni kontrolünü `instrumentation.ts`'ten, bir değişken ilk okunduğunda bir kez çalışacak şekilde taşı; birim testle ve wrangler altında eksik bir değişkenin tüm sorunları listeleyen 500 hatası verdiğini doğrula
+- [x] 10.4 Wrangler altında (`npm run preview`) tam akışı Stripe test moduyla çalıştır (sepet → ödeme → onay → admin → Versendet → takip → cayma → e-postalar) ve `npm run check:leak` ile tedarikçi bilgisi sızıntısı olmadığını doğrula
+- [x] 10.5 README'ye Cloudflare deploy adımlarını (Workers Paid, secret'lar, build değişkenleri, alan adı) yaz, canlıya geçiş listesini ve Datenschutz sayfasındaki barındırma bölümünü Cloudflare'e göre güncelle; kod ve README'de Vercel'e özgü talimat kalmadığını doğrula
+- [ ] 10.6 İşletmecinin Cloudflare hesabına `npm run deploy` ile deploy et ve `*.workers.dev` adresinde tam akışı Stripe test moduyla tekrarla; ana sayfada üçüncü taraf istek olmadığını tarayıcı ağ sekmesinden doğrula

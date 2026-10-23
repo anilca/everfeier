@@ -10,8 +10,18 @@ vi.mock("@/lib/stripe", () => ({
 }));
 
 beforeAll(() => {
-  process.env.ADMIN_SESSION_SECRET = secret;
-  process.env.NEXT_PUBLIC_SITE_URL = "http://localhost:3000";
+  Object.assign(process.env, {
+    STRIPE_SECRET_KEY: "sk_test_x",
+    SITE_URL: "http://localhost:3000",
+    ADMIN_PASSWORD: "pw",
+    ADMIN_SESSION_SECRET: secret,
+    RESEND_API_KEY: "re_x",
+    MAIL_FROM: "a@b.de",
+    OPERATOR_EMAIL: "c@d.de",
+    SHOP_MODE: "open",
+    ORDER_CUTOFF: "2026-10-28T23:59:00+01:00",
+    VAT_MODE: "kleinunternehmer",
+  });
 });
 
 describe("admin order API", () => {

@@ -2,7 +2,7 @@ import "server-only";
 
 export const REQUIRED_ENV = [
   "STRIPE_SECRET_KEY",
-  "NEXT_PUBLIC_SITE_URL",
+  "SITE_URL",
   "ADMIN_PASSWORD",
   "ADMIN_SESSION_SECRET",
   "RESEND_API_KEY",
@@ -33,15 +33,32 @@ export function findEnvProblems(env: Record<string, string | undefined>): string
   if (env.ADMIN_SESSION_SECRET && env.ADMIN_SESSION_SECRET.length < 32) {
     problems.push("ADMIN_SESSION_SECRET muss mindestens 32 Zeichen lang sein");
   }
+  if (env.SITE_URL && !/^https?:\/\//.test(env.SITE_URL)) {
+    problems.push("SITE_URL muss mit http:// oder https:// beginnen");
+  }
   return problems;
 }
 
+let validated = false;
+
+/**
+ * Validates the whole configuration once, on first use. Runs lazily because
+ * instrumentation hooks are not guaranteed on every host (e.g. Cloudflare Workers).
+ */
+export function assertEnv(source: Record<string, string | undefined> = process.env): void {
+  if (validated) return;
+  const problems = findEnvProblems(source);
+  if (problems.length > 0) {
+    throw new Error(`Konfiguration unvollständig (siehe .env.example):\n- ${problems.join("\n- ")}`);
+  }
+  validated = true;
+}
+
 export function env(name: EnvName): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Umgebungsvariable ${name} fehlt`);
-  return value;
+  assertEnv();
+  return process.env[name]!;
 }
 
 export function siteUrl(): string {
-  return env("NEXT_PUBLIC_SITE_URL").replace(/\/+$/, "");
+  return env("SITE_URL").replace(/\/+$/, "");
 }

@@ -23,12 +23,20 @@ Repo boş; mevcut kod, altyapı ya da veri yok. Motivasyon ve kapsam için bkz. 
 
 ## Decisions
 
-### 1. Uygulama: Next.js (App Router, TypeScript), Vercel'de
+### 1. Uygulama: Next.js (App Router, TypeScript), Cloudflare Workers'ta
 
 Vitrin, API route'ları (checkout, takip, admin, cayma) ve sunucu tarafı gizli anahtarlar tek projede.
 - *Alternatif:* Shopify/hazır platform. Daha hızlı olurdu ama kullanıcı özel bir site istedi ve platform aylık ücret ile kendi kurallarını getiriyor.
 - *Alternatif:* Ayrı frontend + backend. Bu kapsam için gereksiz karmaşıklık.
-- *Barındırma:* Vercel Hobby planı ticari kullanıma izin vermiyor. Geliştirme ve test modu Hobby'de yapılabilir; canlı satış için Pro plana (sezon boyunca yaklaşık 20 $/ay) geçilir. Netlify veya Cloudflare'in ücretsiz planı da alternatif, ama şartları ayrıca doğrulanmalı.
+- *Barındırma:* Cloudflare Workers, `@opennextjs/cloudflare` adaptörüyle. Adaptörün 1.20.12+ sürümleri Next.js 16.4'ü destekliyor. **Workers Paid** planı kullanılıyor (5 $/ay). Ücretsiz planın istek başına 10 ms CPU sınırı ve 3 MiB worker boyut sınırı, sunucuda render edilen bir site için fazla dar.
+- *Alternatif:* Vercel. Next.js'i hiç ayar gerektirmeden çalıştırıyor, ama ticari kullanım için Pro planı gerekiyor (yaklaşık 20 $/ay); kullanıcı Cloudflare'i tercih etti.
+- *Workers ortamına özgü kurallar:*
+  - `nodejs_compat` uyumluluk bayrağı açık; `node:crypto` (admin oturumu) bununla çalışıyor.
+  - Stripe SDK Workers için ayrı bir paket sürümü (`workerd` export) kullanıyor; Resend zaten `fetch` tabanlı.
+  - `NEXT_PUBLIC_*` değişkenleri build sırasında koda gömüldüğü için site adresi yalnızca sunucuda okunan `SITE_URL` değişkeninde tutuluyor.
+  - OpenNext'in `instrumentation.ts` desteği belgelenmediği için ortam değişkeni kontrolü, bir ortam değişkeni ilk kez okunduğunda (`env()` ve sezon ayarları) bir kez yapılıyor. Eksik bir değişken varsa tüm sorunları listeleyen açıklayıcı bir 500 hatası dönüyor. Node runtime'daki `proxy.ts`'e OpenNext henüz destek vermediği için o yol kullanılmıyor.
+  - Gizli değerler Cloudflare'de secret olarak tutuluyor. Yerelde `.env.development.local` dosyası, `.dev.vars` içinde `NEXTJS_ENV=development` ve `opennextjs-cloudflare preview` (wrangler) kullanılıyor.
+  - OpenNext, build sırasında `.env*` dosyalarının değerlerini worker paketine gömüyor. Bu yüzden deploy, `.env` dosyası olmayan Workers Builds (GitHub) ortamında yapılıyor. Yerel `npm run deploy` komutu, makinede `.env*` dosyası varsa çalışmayı reddediyor (`scripts/guard-env-files.mjs`).
 
 ### 2. Katalog: repodaki tipli sabit dosya
 
@@ -136,7 +144,9 @@ Analitik, reklam pikseli veya üçüncü taraf script yok. Stripe.js de yüklenm
 ## Risks / Trade-offs
 
 - [Stripe Search eventual consistency (~1 dk)] → Yeni sipariş admin listesine ve takibe gecikmeli düşebilir. Onay sayfası Session'ı doğrudan okuyor; admin ekranında "yeni siparişler 1 dakikaya kadar gecikebilir" notu var.
-- [Stripe API rate limit / admin listesinde N+1 Session çağrısı] → Deneme hacminde sorun değil. Liste en son 100 siparişle sınırlı; gelecek sezonda veritabanına geçilir.
+- [Stripe API rate limit / sipariş detayında Session + line item çağrıları] → Deneme hacminde sorun değil. Admin listesi tek çağrıyla okunuyor ve son 100 siparişle sınırlı; gelecek sezonda veritabanına geçilir.
+- [OpenNext üçüncü taraf bir adaptör; Next.js sürümlerini gecikmeli takip ediyor] → Next.js ve adaptör sürümleri `package.json`'da sabitleniyor. Next.js güncellemesinden önce adaptörün sürüm notları kontrol ediliyor. Adaptör bir gün yetersiz kalırsa kod Vercel'de değişiklik gerektirmeden çalışıyor.
+- [Worker boyut sınırı (Paid: 10 MiB sıkıştırılmış)] → Build çıktısının boyutu deploy sırasında kontrol ediliyor. Bağımlılıklar az (Stripe, Resend).
 - [Ürün Temu'da tükenir veya fiyatı değişir] → İşletmeci ürünü `active: false` yapıp yeniden deploy ediyor. Sipariş zaten alınmışsa siparişi iptal edip geri ödeme yapıyor.
 - [Temu ambalajı ve faturası müşteriye gider] → AGB/SSS'de "Versand direkt durch unseren Partner" notu.
 - [Temu şartları yeniden satışı kısıtlayabilir] → İş riski; işletmecinin kontrolünde. Kodu etkilemiyor.
@@ -147,11 +157,11 @@ Analitik, reklam pikseli veya üçüncü taraf script yok. Stripe.js de yüklenm
 
 ## Migration Plan
 
-1. Stripe test modunda geliştirme; Vercel preview ortamında uçtan uca test (test kartı ile sipariş → admin → takip → cayma).
-2. Canlıya geçiş ön koşulları: Gewerbe kaydı, Stripe canlı aktivasyonu, gerçek Impressum ve yasal metinler, Resend alan adı doğrulaması, Vercel Pro.
+1. Stripe test modunda geliştirme. Önce yerelde wrangler ile (`opennextjs-cloudflare preview`), sonra Cloudflare'deki `*.workers.dev` deploy'unda uçtan uca test: test kartı ile sipariş → admin → takip → cayma.
+2. Canlıya geçiş ön koşulları: Gewerbe kaydı, Stripe canlı aktivasyonu, gerçek Impressum ve yasal metinler, Resend alan adı doğrulaması, Cloudflare Workers Paid planı ve everfeier.com alan adının worker'a bağlanması.
 3. Canlı anahtarlar ve `SHOP_MODE=open` ile deploy; bir gerçek düşük tutarlı test siparişi verilip geri ödeme yapılıyor.
 4. Sezon sonu: `SHOP_MODE=closed`. Site takip ve cayma için en az 14 gün + teslim süresi boyunca açık kalıyor.
-5. Geri dönüş: `SHOP_MODE=closed` siparişleri anında durduruyor; deploy geçmişinden önceki sürüme dönülebiliyor.
+5. Geri dönüş: `SHOP_MODE=closed` siparişleri anında durduruyor. Önceki sürüme Cloudflare'in deploy geçmişinden ya da `wrangler rollback` ile dönülebiliyor.
 
 ## Open Questions
 

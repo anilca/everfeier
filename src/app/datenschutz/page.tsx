@@ -35,10 +35,11 @@ export default function DatenschutzPage() {
         Bestätigungen zu Widerrufserklärungen versenden wir über den Dienst Resend. <P>Anbieterangaben, Rechtsgrundlage, Drittland</P>
       </p>
 
-      <h2>Hosting (Vercel)</h2>
+      <h2>Hosting (Cloudflare)</h2>
       <p>
-        Die Website wird bei Vercel gehostet. Beim Aufruf werden technisch notwendige Daten (z. B. IP-Adresse, Zeitpunkt)
-        verarbeitet. <P>Anbieterangaben, Rechtsgrundlage, Drittland</P>
+        Die Website wird auf der Plattform Cloudflare Workers betrieben (Cloudflare, Inc.). Beim Aufruf werden technisch
+        notwendige Daten (z. B. IP-Adresse, Zeitpunkt, aufgerufene Seite) verarbeitet und für die Fehleranalyse kurzzeitig
+        protokolliert. <P>Anbieterangaben, Rechtsgrundlage, Drittland/Datenschutzrahmen, Speicherdauer der Logs</P>
       </p>
 
       <h2>Deine Rechte</h2>

@@ -50,5 +50,5 @@ Kapsam dışı: üyelik, kupon, yorumlar, çoklu dil, otomatik Temu siparişi, o
 ## Impact
 
 - Yeni kod tabanı: Next.js (TypeScript) uygulaması; repoda henüz kod yok.
-- Dış bağımlılıklar: Stripe (Checkout, PaymentIntents, Search API), işlemsel e-posta sağlayıcısı (Resend, yalnızca cayma onayı için), barındırma (Vercel).
+- Dış bağımlılıklar: Stripe (Checkout, PaymentIntents, Search API), işlemsel e-posta sağlayıcısı (Resend, yalnızca cayma onayı için), barındırma (Cloudflare Workers Paid, `@opennextjs/cloudflare` adaptörüyle).
 - İşletme tarafı ön koşulları (kod dışı): Gewerbeanmeldung, Stripe hesabının canlıya alınması, yasal metinlerin gerçek bilgilerle doldurulması, ürün fotoğrafları. Kodlama Stripe test modunda bunları beklemeden ilerleyebilir; canlıya çıkış bunlara bağlı.

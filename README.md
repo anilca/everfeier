@@ -1,6 +1,6 @@
 # everfeier
 
-Almanya'ya yönelik, Halloween 2026 için dönemlik ve minimal bir online mağaza. Next.js 16 ile yazıldı, ödemeler Stripe Checkout ile alınıyor. Ayrı bir veritabanı yok: siparişler Stripe'ta tutuluyor. Sitenin dili Almanca.
+Almanya'ya yönelik, Halloween 2026 için dönemlik ve minimal bir online mağaza. Next.js 16 ile yazıldı, ödemeler Stripe Checkout ile alınıyor. Ayrı bir veritabanı yok: siparişler Stripe'ta tutuluyor. Sitenin dili Almanca. Site, [OpenNext](https://opennext.js.org/cloudflare) adaptörüyle **Cloudflare Workers** üzerinde çalışıyor.
 
 Planlama belgeleri `openspec/changes/halloween-store-mvp/` altında.
 
@@ -8,30 +8,29 @@ Planlama belgeleri `openspec/changes/halloween-store-mvp/` altında.
 
 ```bash
 npm install
-cp .env.example .env.local   # değerleri doldur
-npm test                     # birim testleri
-npm run dev                  # http://localhost:3000
+cp .env.example .env.development.local          # değerleri doldur
+printf 'NEXTJS_ENV=development\n' > .dev.vars    # wrangler önizlemesinin geliştirme değerlerini kullanması için
+npm test                                         # birim testleri
+npm run dev                                      # Next.js geliştirme sunucusu: http://localhost:3000
+npm run preview                                  # Cloudflare Workers ortamında (wrangler) yerel önizleme
 ```
 
-Production derlemesi:
+`npm run preview` varsayılan olarak `http://localhost:8787` adresinde açılır. Stripe dönüş adresleri `SITE_URL` değerine gittiği için `SITE_URL` ile aynı portu kullan; örneğin `npx opennextjs-cloudflare preview --port 3000`.
 
-```bash
-npm run build
-npm run start
-```
+**Neden `.env.local` değil de `.env.development.local`:** OpenNext, build sırasında `.env` dosyalarındaki değerleri worker paketinin içine gömüyor. Yerel anahtarlar yalnızca geliştirme dosyasında durursa production ayarlarına hiç girmiyor. `npm run deploy` de makinede bir `.env` dosyası bulunduğu sürece çalışmayı reddediyor (bkz. [Cloudflare'e deploy](#cloudflarea-deploy)).
 
-Zorunlu bir ortam değişkeni eksik ya da geçersizse sunucu açılışta değişkenleri tek tek listeleyen bir hata verir ve isteklere cevap vermez.
+Zorunlu bir ortam değişkeni eksik ya da geçersizse ilk istekte tüm sorunları listeleyen bir hata oluşur ve sayfalar 500 döner. Cloudflare'de bu mesaj Worker'ın loglarında (Observability) görünür.
 
 ### Ortam değişkenleri
 
 | Değişken | Açıklama |
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe gizli anahtarı. Geliştirmede `sk_test_...`, canlıda `sk_live_...` |
-| `NEXT_PUBLIC_SITE_URL` | Sitenin adresi, sonunda `/` olmadan (ör. `https://everfeier.de`) |
+| `SITE_URL` | Sitenin adresi, sonunda `/` olmadan (ör. `https://everfeier.com`). Yalnızca sunucuda okunuyor |
 | `ADMIN_PASSWORD` | Admin paneli şifresi |
 | `ADMIN_SESSION_SECRET` | En az 32 karakter rastgele değer: `openssl rand -hex 32` |
 | `RESEND_API_KEY` | Resend API anahtarı (cayma onayı e-postaları için) |
-| `MAIL_FROM` | Gönderen adresi, ör. `everfeier <shop@everfeier.de>`; alan adı Resend'de doğrulanmış olmalı |
+| `MAIL_FROM` | Gönderen adresi, ör. `everfeier <shop@everfeier.com>`; alan adı Resend'de doğrulanmış olmalı |
 | `OPERATOR_EMAIL` | Cayma bildirimlerinin kopyasının gideceği adres (senin adresin) |
 | `SHOP_MODE` | `open` veya `closed` |
 | `ORDER_CUTOFF` | Son sipariş zamanı, ISO formatında (ör. `2026-10-28T23:59:00+01:00`) |
@@ -73,6 +72,40 @@ npm run lint         # ESLint
 npm run check:leak   # çalışan sitede tedarikçi bilgisi sızıntısı kontrolü (varsayılan http://localhost:3000)
 ```
 
+## Cloudflare'e deploy
+
+Gereken: bir Cloudflare hesabı ve **Workers Paid** planı (5 $/ay). Ücretsiz planın istek başına 10 ms CPU sınırı bu site için yetersiz.
+
+### Önerilen yol: GitHub'dan otomatik build (Workers Builds)
+
+Bu yolda build Cloudflare'de, repodan alınan temiz kodla yapılıyor; senin makinendeki `.env` dosyaları pakete giremiyor.
+
+1. Cloudflare Dashboard'da **Workers & Pages → Create → Import a repository** yolunu izle ve `anilca/everfeier` reposunu seç.
+2. Ayarları şöyle gir:
+   - **Project name:** `everfeier` (`wrangler.jsonc` içindeki `name` ile aynı olmalı)
+   - **Build command:** `npx opennextjs-cloudflare build`
+   - **Deploy command:** `npx opennextjs-cloudflare deploy -- --keep-vars`
+   - **Production branch:** canlıya çıkacak dal (ör. `main`)
+3. İlk deploy bitince Worker'ın **Settings → Variables and Secrets** bölümüne değerleri gir:
+   - **Secret** olarak: `STRIPE_SECRET_KEY`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `RESEND_API_KEY`
+   - **Text** olarak: `SITE_URL`, `MAIL_FROM`, `OPERATOR_EMAIL`, `SHOP_MODE`, `ORDER_CUTOFF`, `VAT_MODE`
+   - Build değişkeni gerekmiyor; kodda `NEXT_PUBLIC_` ile başlayan değişken yok.
+4. Test için önce `https://everfeier.<hesap>.workers.dev` adresini kullan; `SITE_URL` de bu adres olmalı. Stripe test anahtarıyla tam akışı dene.
+5. Canlıya geçerken **Settings → Domains & Routes → Add → Custom domain** yoluyla `everfeier.com` alan adını ekle ve `SITE_URL=https://everfeier.com` yap. Bunun için alan adının DNS'i Cloudflare'de olmalı. DNS'i taşırken mevcut e-posta (MX) kayıtlarını ve Resend kayıtlarını da Cloudflare'e eklemeyi unutma.
+
+### Yerelden deploy (alternatif)
+
+```bash
+npx wrangler login
+npm run deploy
+```
+
+`npm run deploy`, proje klasöründe `.env.example` dışında bir `.env*` dosyası varsa durur. Değerleri `npx wrangler secret put STRIPE_SECRET_KEY` gibi komutlarla ya da Dashboard'dan gir.
+
+### Geri alma
+
+Dashboard'da **Deployments** sekmesinden önceki sürüme dön ya da `npx wrangler rollback` komutunu kullan. Siparişleri hemen durdurmak için `SHOP_MODE=closed` yeterli.
+
 ## Canlıya geçiş kontrol listesi
 
 Kod dışındaki adımların hepsi işletmecinin, yani senin sorumluluğunda. Hepsi tamamlanmadan `SHOP_MODE=open` ile canlı anahtar kullanma.
@@ -86,8 +119,8 @@ Kod dışındaki adımların hepsi işletmecinin, yani senin sorumluluğunda. He
 | 5 | Impressum, Datenschutz, AGB ve Widerrufsbelehrung metinlerini bir generator ya da avukatla hazırla; sarı işaretli tüm yer tutucuları değiştir | İşletmeci |
 | 6 | § 312j BGB: Stripe'ın son butonundaki "Zahlen" etiketinin yeterli olup olmadığını kontrol ettir (bkz. design.md) | İşletmeci |
 | 7 | Resend'de gönderen alan adını doğrula; `MAIL_FROM` ve `OPERATOR_EMAIL` değerlerini ayarla | İşletmeci |
-| 8 | Vercel'de Pro plana geç (Hobby planı ticari kullanıma izin vermiyor); projeyi bağla ve alan adını ayarla | İşletmeci |
-| 9 | Vercel'de canlı ortam değişkenlerini gir (`sk_live_...`, yeni ve güçlü `ADMIN_PASSWORD`, yeni `ADMIN_SESSION_SECRET`, `NEXT_PUBLIC_SITE_URL`) | İşletmeci |
+| 8 | Cloudflare'de Workers Paid planına geç, repoyu Workers Builds ile bağla ve everfeier.com'u Custom domain olarak ekle (bkz. [Cloudflare'e deploy](#cloudflarea-deploy)) | İşletmeci |
+| 9 | Cloudflare'de canlı değerleri gir: `sk_live_...`, yeni ve güçlü bir `ADMIN_PASSWORD`, yeni bir `ADMIN_SESSION_SECRET` ve `SITE_URL=https://everfeier.com`. Hassas değerleri Secret olarak gir | İşletmeci |
 | 10 | `ORDER_CUTOFF` değerini kesinleştir (Temu teslim süresi + 1 gün tampon) | İşletmeci |
 | 11 | Gerçek ürün fotoğraflarını `public/products/` altına koy | İşletmeci |
 | 12 | Riesen-Tarantel'in teslim süresini Temu ürün sayfasından kontrol et; uzunsa `active: false` yap | İşletmeci |
